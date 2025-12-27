@@ -64,10 +64,12 @@ namespace Ecommerce.Application.Services
             var producto = _mapper.Map<Producto>(dto);
             await _repository.CrearAsync(producto);
 
-            return _mapper.Map<ProductoDTO>(producto);
+            var productoCreado = await _repository.ObtenerPorIdAsync(producto.idProducto);
+
+            return _mapper.Map<ProductoDTO>(productoCreado);
         }
 
-        public Task EliminarArchivo(string urlImagen)
+        public Task EliminarArchivoAsync(string urlImagen)
         {
             if (string.IsNullOrWhiteSpace(urlImagen))
                 return Task.CompletedTask;

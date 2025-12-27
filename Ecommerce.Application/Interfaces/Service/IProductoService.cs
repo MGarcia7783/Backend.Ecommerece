@@ -12,7 +12,7 @@ namespace Ecommerce.Application.Interfaces.Service
         Task<ProductoDTO> CrearAsync(CrearProductoDTO dto);
         Task<bool> AcualizarAsync(int id, ActualizarProductoDTO dto);
         Task<string> GuardarArchivosAsync(IFormFile archivo, string carpeta);
-        Task EliminarArchivo(string urlImagen);
+        Task EliminarArchivoAsync(string urlImagen);
         Task<bool> EliminarAsync(int id);
     }
 }

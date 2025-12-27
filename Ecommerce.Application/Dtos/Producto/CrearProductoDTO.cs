@@ -11,6 +11,7 @@ namespace Ecommerce.Application.Dtos.Producto
         public decimal precio { get; set; }
         public int stock { get; set; }
         public string seccion { get; set; } = string.Empty;
+        public int idCategoria { get; set; }
         public string imagen1 { get; set; } = string.Empty;
         public string imagen2 { get; set; } = string.Empty;
         public string imagen3 { get; set; } = string.Empty;
