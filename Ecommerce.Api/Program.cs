@@ -1,4 +1,6 @@
+using Ecommerce.Application.Interfaces.Repository;
 using Ecommerce.Infrastructure.Data;
+using Ecommerce.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -46,6 +48,9 @@ var connetionString =
 builder.Services.AddDbContext<EcommerceDbContext>(options => options.UseSqlServer(connetionString));
 
 
+// Registrar repositorios con sus interfaces
+builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 
 
 builder.Services.AddControllers();
