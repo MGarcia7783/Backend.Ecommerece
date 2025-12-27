@@ -1,4 +1,9 @@
+using AutoMapper;
+using Ecommerce.Api.Mapping;
+using Ecommerce.Api.Middleware;
 using Ecommerce.Application.Interfaces.Repository;
+using Ecommerce.Application.Interfaces.Service;
+using Ecommerce.Application.Services;
 using Ecommerce.Infrastructure.Data;
 using Ecommerce.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -52,7 +57,15 @@ builder.Services.AddDbContext<EcommerceDbContext>(options => options.UseSqlServe
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 
+// Registrar servicios con sus interfaces
+builder.Services.AddScoped<ICategoriaService, CategoriaService>();
 
+
+// Registrar AutoMapper
+builder.Services.AddAutoMapper(typeof(MappingsProfile));
+
+
+// Agregar controladores
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
@@ -87,6 +100,9 @@ app.Lifetime.ApplicationStarted.Register(() =>
 });
 
 
+// Registrar Middleware para excepciones globales
+app.UseMiddleware<ExceptionMiddleware>();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -94,6 +110,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+
+// Usar middleware para HTTPS Redirection y autorization
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
