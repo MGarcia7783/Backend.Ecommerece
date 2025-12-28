@@ -1,6 +1,7 @@
 ﻿using Ecommerce.Application.Dtos.Categoria;
 using Ecommerce.Application.Interfaces.Service;
 using Ecommerce.Application.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -9,6 +10,7 @@ namespace Ecommerce.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Administrador")]
     public class CategoriaController : ControllerBase
     {
         private readonly ICategoriaService _service;
@@ -19,6 +21,7 @@ namespace Ecommerce.Api.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll([FromQuery] int numeroPagina = 1, [FromQuery] int pageSize = 10)
         {
             var registros = await _service.ObtenerPaginadosAsync(numeroPagina, pageSize);

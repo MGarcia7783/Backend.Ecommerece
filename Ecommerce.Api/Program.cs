@@ -4,10 +4,17 @@ using Ecommerce.Api.Middleware;
 using Ecommerce.Application.Interfaces.Repository;
 using Ecommerce.Application.Interfaces.Service;
 using Ecommerce.Application.Services;
+using Ecommerce.Domain.Entities;
 using Ecommerce.Infrastructure.Data;
 using Ecommerce.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +30,9 @@ var port = Environment.GetEnvironmentVariable("DB_PORT");
 var database = Environment.GetEnvironmentVariable("DB_DATABASE");
 var user = Environment.GetEnvironmentVariable("DB_USER");
 var password = Environment.GetEnvironmentVariable("DB_PASSWORD");
+var key = Environment.GetEnvironmentVariable("JWT_KEY");
+var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
+var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
 
 
 // Validar variables de entorno para la conexión
@@ -54,6 +64,17 @@ var connetionString =
 builder.Services.AddDbContext<EcommerceDbContext>(options => options.UseSqlServer(connetionString));
 
 
+// Definier las reglas de seguridad para la password y email
+builder.Services.AddIdentity<Usuario, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 6;
+    options.User.RequireUniqueEmail = true;
+})
+    .AddEntityFrameworkStores<EcommerceDbContext>()
+    .AddDefaultTokenProviders();
+
+
 // Registrar repositorios con sus interfaces
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
@@ -62,6 +83,39 @@ builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 // Registrar servicios con sus interfaces
 builder.Services.AddScoped<ICategoriaService, CategoriaService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+
+
+// Validar la clave secreta
+if(string.IsNullOrEmpty(key))
+{
+    throw new InvalidOperationException("La clave JWT no está configurada correctamente.");
+}
+
+
+// Configurar la autenticación
+builder.Services.AddAuthentication
+    (
+        options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        }
+    ).AddJwtBearer(options =>
+    {
+        options.SaveToken = true;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(key)),
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            RoleClaimType = ClaimTypes.Role,
+            ValidIssuer = issuer,
+            ValidAudience = audience
+        };
+    });
 
 
 // Registrar AutoMapper
@@ -134,8 +188,11 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 
+// Soporte para la autenticación
+app.UseAuthentication();
 app.UseAuthorization();
 
+// Mapear controladores
 app.MapControllers();
 
 app.Run();

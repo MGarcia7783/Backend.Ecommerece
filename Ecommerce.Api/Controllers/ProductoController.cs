@@ -1,16 +1,15 @@
 ﻿using Ecommerce.Api.Request;
-using Ecommerce.Application.Dtos.Categoria;
 using Ecommerce.Application.Dtos.Producto;
 using Ecommerce.Application.Interfaces.Service;
 using Ecommerce.Application.Response;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.WebSockets;
 
 namespace Ecommerce.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Administrador")]
     public class ProductoController : ControllerBase
     {
         private readonly IProductoService _service;
@@ -21,6 +20,7 @@ namespace Ecommerce.Api.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll([FromQuery] int numeroPagina = 1, [FromQuery] int pageSize = 10)
         {
             var registros = await _service.ObtenerPaginadosAsync(numeroPagina, pageSize);
