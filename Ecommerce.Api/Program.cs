@@ -7,6 +7,7 @@ using Ecommerce.Application.Services;
 using Ecommerce.Infrastructure.Data;
 using Ecommerce.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +57,7 @@ builder.Services.AddDbContext<EcommerceDbContext>(options => options.UseSqlServe
 // Registrar repositorios con sus interfaces
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
 // Registrar servicios con sus interfaces
 builder.Services.AddScoped<ICategoriaService, CategoriaService>();
@@ -120,6 +122,17 @@ if (app.Environment.IsDevelopment())
 
 // Usar middleware para HTTPS Redirection y autorization
 app.UseHttpsRedirection();
+
+
+// ARCHIVOS ESTÁTICOS
+app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.WebRootPath, "ImagenesProductos")),
+    RequestPath = "/ImagenesProductos"
+});
+
 
 app.UseAuthorization();
 
