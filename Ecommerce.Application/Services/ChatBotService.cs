@@ -119,7 +119,7 @@ namespace Ecommerce.Application.Services
             return new ChatBotResponseDTO
             {
                 respuesta = "Lo siento, no pude encontrar información relevante para tu consulta. Prueba buscar por nombre, categoría o preguntar por stock. ¿Podrías proporcionar más detalles o especificar el producto que estás buscando?",
-                itencion = "Sin Resultad"
+                itencion = "Sin Resultados"
             };
         }
 

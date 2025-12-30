@@ -13,8 +13,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -121,6 +123,35 @@ builder.Services.AddAuthentication
             ValidIssuer = issuer,
             ValidAudience = audience
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();
+
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+
+                await context.Response.WriteAsync(JsonSerializer.Serialize(new
+                {
+                    status = 401,
+                    detail = "No autenticado. El token es inválido o no fue enviado."
+                }));
+            },
+
+            OnForbidden = async context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json";
+
+                await context.Response.WriteAsync(JsonSerializer.Serialize(new
+                {
+                    status = 403,
+                    detail = "Acceso denegado. No tiene permisos para acceder a este recurso."
+                }));
+            }
+        };
     });
 
 
@@ -130,6 +161,100 @@ builder.Services.AddAutoMapper(typeof(MappingsProfile));
 
 // Agregar controladores
 builder.Services.AddControllers();
+
+
+// Swagger / OpenAPI
+builder.Services.AddEndpointsApiExplorer();         // Detectar todos los endpoint de API
+builder.Services.AddSwaggerGen( options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Version = "v1",
+        Title = "Ecommerce API",
+        Description = """
+        #### **Infraestructura escalable para la gestión de comercio digital.**
+
+        Esta API proporciona un conjunto robusto de herramientas para administrar operaciones comerciales complejas, garantizando seguridad, velocidad y una experiencia de usuario optimizada.
+
+        ---
+
+        #### Módulos del Sistema
+        * **Catálogo:** Gestión dinámica de productos y categorías con control de stock en tiempo real.
+        * **Ventas:** Administración integral de pedidos y seguimiento del ciclo de vida de compra.
+        * **Finanzas:** Procesamiento de pagos mediante pasarelas externas y auditoría de transacciones.
+        * **Soporte IA:** Chatbot de asistencia para búsqueda inteligente y recomendaciones personalizadas.
+
+        #### Características Técnicas
+        * **Seguridad:** Autenticación de grado industrial mediante **JWT**.
+        * **Eficiencia:** Consumo de recursos optimizado con soporte para **paginación y filtrado**.
+        * **Integración:** Salidas JSON estandarizadas para una fácil implementación en entornos Web y Mobile.
+
+        ---
+
+        """,
+
+        Contact = new OpenApiContact
+        {
+            Name = "Mario Garcia (Soporte Técnico)",
+            Email = "mrgmairena@gmail.com",
+            Url = new Uri("https://github.com/MGarcia7783/Backend.Ecommerece")
+        },
+        License = new OpenApiLicense
+        {
+            Name = "MIT License",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        }
+    });
+
+    // Configuración de seguridad para Swagger (JWT)
+
+    // 1. Definir el esquema de seguridad que Swagger usará para UI
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Ingrese el token JWT. Ejemplo: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    });
+
+    // 2. Aplicar el esquema de seguridad a toso los endpoint protegidos de la API
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecuritySchemeReference(referenceId: "Bearer", hostDocument: document),
+            new List<string>()
+        }
+    });
+});
+
+
+// Configuración de CORS (Angulr y React)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        if(builder.Environment.IsDevelopment())
+        {
+            policy.WithOrigins(
+                "http://localhost:4200",    // Angular
+                "http://localhost:3000"     // React
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+        }
+        else
+        {
+            policy.WithOrigins(
+            "https://www.miappangular.com", // Angular
+            "https://www.miappreact.com"    // React
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+        }
+    });
+});
 
 
 // Agregar HttpContextAccessor
@@ -176,12 +301,17 @@ app.UseMiddleware<ExceptionMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 
 // Usar middleware para HTTPS Redirection y autorization
 app.UseHttpsRedirection();
+
+
+// CORS
+app.UseCors("FrontendPolicy");
 
 
 // ARCHIVOS ESTÁTICOS
